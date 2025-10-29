@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>soho-web</title>
+  </head>
+  <body class="font-sans antialiased bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    <div id="root">Loading…</div>
+    <script type="module">
+      const root = document.getElementById('root');
+      if (root) root.textContent = 'Booting…';
+      try {
+        await import('/src/main.tsx');
+      } catch (e) {
+        console.error('[soho-web] Failed to load main.tsx', e);
+        if (root) root.textContent = 'Failed to load app: ' + (e && e.message ? e.message : String(e));
+      }
+    </script>
+  </body>
+</html>
