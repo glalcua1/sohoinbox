@@ -120,6 +120,115 @@ function migrateThreads(threads: Thread[]): { threads: Thread[]; changed: boolea
     }
     return t
   })
+  // Canonicalize property details by hotel name to ensure consistency across threads
+  const canonical: Record<string, Thread['property']> = {
+    'CityCenter Hotel': {
+      name: 'CityCenter Hotel',
+      address: '456 Downtown Ave',
+      contact: '+1 (555) 987-6543',
+      rating: 4.1,
+      reviewsCount: 842,
+      amenities: ['Free Wi‑Fi', 'Gym', 'Bar'],
+      timezone: 'Asia/Kolkata',
+      website: 'https://citycenter.example',
+      email: 'hello@citycenter.example',
+      restaurants: [
+        { type: 'All‑day Café', hours: '6:30AM–11PM' },
+        { type: 'Lobby Bar', hours: '5PM–1AM' },
+      ],
+      parking: 'Basement self‑parking, ₹200/hour; valet available',
+      rooms: [
+        { name: 'Standard', price: '₹5,500' },
+        { name: 'Executive', price: '₹9,500' },
+      ],
+      policies: { checkIn: '2PM', checkOut: '11AM' },
+      promotions: byProperty['CityCenter Hotel'],
+    },
+    'OceanView Resort': {
+      name: 'OceanView Resort',
+      address: '123 Beach Rd',
+      contact: '+1 (555) 123-4567',
+      rating: 4.6,
+      reviewsCount: 1287,
+      amenities: ['Pool', 'Spa', 'Gym', 'Free Wi‑Fi', 'Breakfast'],
+      timezone: 'Asia/Kolkata',
+      website: 'https://oceanview.example',
+      email: 'contact@oceanview.example',
+      restaurants: [
+        { type: 'Multi‑cuisine Restaurant', hours: '7AM–11PM' },
+        { type: 'Seafood Bar', hours: '5PM–12AM' },
+      ],
+      poolHours: '6AM–10PM',
+      parking: 'On‑site parking, complimentary valet',
+      rooms: [
+        { name: 'Deluxe', price: '₹8,000' },
+        { name: 'Suite', price: '₹12,000' },
+      ],
+      policies: { checkIn: '2PM', checkOut: '11AM' },
+      promotions: byProperty['OceanView Resort'],
+    },
+    'MountainPeak Lodge': {
+      name: 'MountainPeak Lodge',
+      address: '789 Summit Dr',
+      contact: '+1 (555) 555-0000',
+      rating: 4.4,
+      reviewsCount: 621,
+      amenities: ['Cabins', 'Hiking Trails', 'Fireplace'],
+      timezone: 'Asia/Kolkata',
+      website: 'https://mountainpeak.example',
+      email: 'stay@mountainpeak.example',
+      restaurants: [
+        { type: 'Local Cuisine Restaurant', hours: '7:30AM–10PM' },
+        { type: 'Coffee House', hours: '7AM–9PM' },
+      ],
+      parking: 'Outdoor self‑parking, free',
+      rooms: [
+        { name: 'Cabin', price: '₹7,000' },
+        { name: 'Suite', price: '₹11,000' },
+      ],
+      policies: { checkIn: '3PM', checkOut: '10AM' },
+      promotions: byProperty['MountainPeak Lodge'],
+    },
+  }
+
+  function mergePromotions(a?: Thread['property']['promotions'], b?: Thread['property']['promotions']) {
+    const map = new Map<string, NonNullable<Thread['property']['promotions']>[number]>()
+    ;(a || []).forEach((p) => map.set(p.code, p))
+    ;(b || []).forEach((p) => map.set(p.code, p))
+    return Array.from(map.values())
+  }
+
+  updated = updated.map((t) => {
+    const canon = canonical[t.property.name]
+    if (!canon) return t
+    const merged: Thread['property'] = {
+      ...canon,
+      // Keep any additional fields already present on thread property that canonical may not include
+      ...t.property,
+      // But enforce canonical baseline for shared fields by re-spreading canon:
+      name: canon.name,
+      address: canon.address,
+      contact: canon.contact,
+      rating: canon.rating,
+      reviewsCount: canon.reviewsCount,
+      amenities: canon.amenities,
+      timezone: canon.timezone,
+      website: canon.website,
+      email: canon.email,
+      restaurants: canon.restaurants,
+      poolHours: canon.poolHours,
+      parking: canon.parking,
+      rooms: canon.rooms,
+      policies: canon.policies,
+      promotions: mergePromotions(canon.promotions, t.property.promotions),
+    }
+    const changedHere = JSON.stringify(merged) !== JSON.stringify(t.property)
+    if (changedHere) {
+      changed = true
+      return { ...t, property: merged }
+    }
+    return t
+  })
   // Add promotion scenario thread if missing
   if (!updated.find((t) => t.id === 't8')) {
     const now = new Date()
