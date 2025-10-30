@@ -142,11 +142,6 @@ function migrateThreads(threads: Thread[]): { threads: Thread[]; changed: boolea
           'We’ll honor SPRING20 if eligible. I can apply the difference right away.',
           'The code works for stays till May 31 and select room types. I’ll verify yours.',
         ],
-        suggestedReplies: [
-          'I’m sorry this happened. May I confirm your booking ID to check the code?',
-          'We’ll honor SPRING20 if eligible. I can apply the difference right away.',
-          'The code works for stays till May 31 and select room types. I’ll verify yours.',
-        ],
       } as any,
       property: {
         name: 'CityCenter Hotel', address: '456 Downtown Ave', contact: '+1 (555) 987-6543', rooms: [

@@ -304,10 +304,6 @@ function App() {
                     const updated = await removeTag(selectedThread.id, tag)
                     setThreadsState(updated)
                   }}
-                  onViewPromotions={() => {
-                    setRightCollapsed(false)
-                    setPropertyTab('promotions')
-                  }}
                 />
                 <QuickReplyBar
                   suggestions={computeSuggestions(selectedThread)}
