@@ -3,9 +3,10 @@ interface Props {
   value: string
   onChange: (value: string) => void
   onSend: () => void
+  placeholder?: string
 }
 
-export default function QuickReplyBar({ suggestions, value, onChange, onSend }: Props) {
+export default function QuickReplyBar({ suggestions, value, onChange, onSend, placeholder }: Props) {
   return (
     <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3">
       <div className="mb-2 flex flex-wrap gap-2">
@@ -24,7 +25,7 @@ export default function QuickReplyBar({ suggestions, value, onChange, onSend }: 
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Type a reply..."
+          placeholder={placeholder || "Type a reply..."}
           className="flex-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && value.trim()) {

@@ -2,12 +2,18 @@ export type Platform = 'facebook' | 'instagram' | 'x' | 'google' | 'tripadvisor'
 
 export type Sentiment = 'positive' | 'neutral' | 'negative';
 
+export type CustomerType = 'regular' | 'member' | 'vip';
+
 export interface Guest {
   name: string;
   username?: string; // handle on the platform
   avatarUrl?: string;
   location?: string; // city, country
   language?: string; // e.g., en-IN
+  customerType?: CustomerType;
+  email?: string;
+  phone?: string;
+  lastStayed?: string; // ISO date string
 }
 
 export interface Message {

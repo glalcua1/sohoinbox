@@ -2,6 +2,8 @@ import type { Thread } from '../types/inbox'
 import AssignDropdown from './AssignDropdown'
 import Avatar from './Avatar'
 import RatesCard from './RatesCard'
+import { useEffect, useState } from 'react'
+import { searchBookingByGuestName, type BookingDetails } from '../services/bookingService'
 
 interface Props {
   thread?: Thread
@@ -9,18 +11,31 @@ interface Props {
   onAddTag?: (tag: string) => void
   onRemoveTag?: (tag: string) => void
   onMarkComplete?: () => void
+  onDeleteMessage?: (messageId: string) => void
 }
 
-import { useEffect, useState } from 'react'
+// useEffect/useState imported above
 
-export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag, onMarkComplete }: Props) {
+export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag, onMarkComplete, onDeleteMessage }: Props) {
   const [flash, setFlash] = useState(false)
+  const [booking, setBooking] = useState<BookingDetails | undefined>(undefined)
   useEffect(() => {
     if (!thread) return
     setFlash(true)
     const t = setTimeout(() => setFlash(false), 1500)
     return () => clearTimeout(t)
   }, [thread?.id])
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      if (!thread?.guest?.name) return setBooking(undefined)
+      const res = await searchBookingByGuestName(thread.guest.name)
+      if (alive) setBooking(res)
+    })()
+    return () => {
+      alive = false
+    }
+  }, [thread?.guest?.name])
   if (!thread) {
     return (
       <section className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
@@ -68,7 +83,26 @@ export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag, on
             <div className="relative group flex items-center gap-2">
               <Avatar name={thread.guest.name} src={thread.guest.avatarUrl} />
               <div className="min-w-0">
-                <div className="truncate text-gray-900 dark:text-gray-100 font-medium">{thread.guest.name}</div>
+                <div className="truncate text-gray-900 dark:text-gray-100 font-medium flex items-center gap-2">
+                  <span className="truncate">{thread.guest.name}</span>
+                  {(() => {
+                    const ct = thread.guest?.customerType || 'regular'
+                    let label = 'Regular'
+                    let cls = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                    if (ct === 'member') {
+                      label = 'Member'
+                      cls = 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+                    } else if (ct === 'vip') {
+                      label = 'VIP'
+                      cls = 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
+                    }
+                    return (
+                      <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] ${cls}`} title={`Customer type: ${label}`}>
+                        {label}
+                      </span>
+                    )
+                  })()}
+                </div>
                 <div className="truncate">{thread.guest.username ? `@${thread.guest.username}` : ''}</div>
               </div>
               <div className="pointer-events-none absolute left-0 top-full z-20 mt-2 hidden w-64 rounded-md border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow group-hover:block dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
@@ -82,6 +116,30 @@ export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag, on
                 <div className="mt-2 space-y-1">
                   {thread.guest.location && <div>📍 {thread.guest.location}</div>}
                   {thread.guest.language && <div>🌐 {thread.guest.language}</div>}
+                  <div>
+                    👤 Customer type:
+                    {(() => {
+                      const ct = thread.guest?.customerType || 'regular'
+                      let label = 'Regular'
+                      let cls = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                      if (ct === 'member') {
+                        label = 'Member'
+                        cls = 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+                      } else if (ct === 'vip') {
+                        label = 'VIP'
+                        cls = 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
+                      }
+                      return <span className={`ml-1 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] ${cls}`}>{label}</span>
+                    })()}
+                  </div>
+                  {(['member','vip'] as const).includes(thread.guest?.customerType as any) && (
+                    <div className="space-y-1 pt-2 border-t border-gray-100 dark:border-gray-800">
+                      {thread.guest.email && <div>✉️ {thread.guest.email}</div>}
+                      {thread.guest.phone && <div>☎️ {thread.guest.phone}</div>}
+                      {thread.guest.lastStayed && <div>🕓 Last stayed: {new Date(thread.guest.lastStayed).toLocaleDateString()}</div>}
+                      <div>🧾 Current booking ID: {booking?.id ?? '—'}</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -100,17 +158,26 @@ export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag, on
       <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
         {thread.messages.map((m) => (
           <div key={m.id} className={m.inbound ? 'text-left' : 'text-right'}>
-            <div
-              className={
-                'inline-block max-w-[75%] rounded-lg px-4 py-2 text-sm ' +
-                (m.inbound
-                  ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
-                  : 'bg-indigo-600 text-white')
-              }
-            >
-              <p className="text-[11px] opacity-70">{m.senderName}</p>
-              <p>{m.text}</p>
-              <p className="mt-1 text-[10px] opacity-60">{new Date(m.timestamp).toLocaleString()}</p>
+            <div className={`inline-flex items-start gap-2 max-w-[85%] ${m.inbound ? 'justify-start' : 'ml-auto justify-end'}`}>
+              <div
+                className={
+                  'inline-block max-w-[75%] rounded-lg px-4 py-2 text-sm ' +
+                  (m.inbound
+                    ? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
+                    : 'bg-indigo-600 text-white')
+                }
+              >
+                <p className="text-[11px] opacity-70">{m.senderName}</p>
+                <p>{m.text}</p>
+                <p className="mt-1 text-[10px] opacity-60">{new Date(m.timestamp).toLocaleString()}</p>
+              </div>
+              {!m.inbound && (
+                <button
+                  className="text-xs text-gray-500 hover:text-red-600"
+                  title="Delete message"
+                  onClick={() => onDeleteMessage?.(m.id)}
+                >🗑️</button>
+              )}
             </div>
             {!m.inbound && /current rates and options/i.test(m.text) && (
               <div className="mt-2 text-left">

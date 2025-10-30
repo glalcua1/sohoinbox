@@ -5,10 +5,11 @@ import PropertyPanel from './components/PropertyPanel'
 import QuickReplyBar from './components/QuickReplyBar'
 import TagFilterBar from './components/TagFilterBar'
 import SearchBar from './components/SearchBar'
-import type { Platform, Sentiment } from './types/inbox'
+import type { Platform, Sentiment, CustomerType } from './types/inbox'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import BulkActionBar from './components/BulkActionBar'
-import { addOutboundMessage, addTag, assignThreads, getThreads, removeTag, updateThread } from './services/inboxService'
+import { addOutboundMessage, addTag, assignThreads, getThreads, removeTag, updateThread, deleteMessage } from './services/inboxService'
+import { translateText } from './services/translationService'
 import type { Thread } from './types/inbox'
 import Sidebar from './components/Sidebar'
 import ResizableColumns from './components/ResizableColumns'
@@ -25,6 +26,7 @@ function App() {
   const [reply, setReply] = useState('')
   const [view, setView] = useState<'inbox' | 'archive'>('inbox')
   const searchRef = useRef<HTMLInputElement>(null)
+  const [customerType, setCustomerType] = useState<CustomerType | 'all'>('all')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
@@ -91,6 +93,10 @@ function App() {
       if (sentiment !== 'all' && t.ai.sentiment !== sentiment) return false
       if (platform !== 'all' && t.platform !== platform) return false
       if (location !== 'all' && (t.guest?.location ?? '').toLowerCase() !== location.toLowerCase()) return false
+      if (customerType !== 'all') {
+        const ct = (t.guest?.customerType ?? 'regular') as CustomerType
+        if (ct !== customerType) return false
+      }
       if (sla !== 'all') {
         const delayed = isOverSla(t)
         if (sla === 'delayed' && !delayed) return false
@@ -105,7 +111,7 @@ function App() {
       }
       return true
     })
-  }, [threads, sentiment, platform, location, sla, query, view])
+  }, [threads, sentiment, platform, location, sla, customerType, query, view])
 
   const locationOptions = useMemo(() => {
     const set = new Set<string>()
@@ -188,11 +194,13 @@ function App() {
               location={location}
               locations={locationOptions}
               sla={sla}
+              customerType={customerType}
               onChange={(n) => {
                 if (n.sentiment !== undefined) setSentiment(n.sentiment)
                 if (n.platform !== undefined) setPlatform(n.platform)
                 if (n.location !== undefined) setLocation(n.location)
                 if (n.sla !== undefined) setSla(n.sla)
+                if (n.customerType !== undefined) setCustomerType(n.customerType)
               }}
             />
                 <div className="flex-1">
@@ -235,6 +243,11 @@ function App() {
                       setSelectedId(next?.id)
                     }
                   }}
+                  onDeleteMessage={async (messageId) => {
+                    if (!selectedThread) return
+                    const updated = await deleteMessage(selectedThread.id, messageId)
+                    setThreadsState(updated)
+                  }}
                   onAddTag={async (tag) => {
                     if (!selectedThread) return
                     const updated = await addTag(selectedThread.id, tag)
@@ -250,16 +263,19 @@ function App() {
                   suggestions={selectedThread?.ai.suggestedReplies ?? []}
                   value={reply}
                   onChange={setReply}
+                  placeholder={selectedThread?.guest?.language ? `Type a reply… (will send in ${selectedThread.guest.language})` : 'Type a reply...'}
                   onSend={async () => {
                     if (!selectedThread || !reply.trim()) return
-                    const updated = await addOutboundMessage(selectedThread.id, reply.trim())
+                    const targetLang = selectedThread.guest?.language
+                    const text = await translateText(reply.trim(), targetLang)
+                    const updated = await addOutboundMessage(selectedThread.id, text)
                     setReply('')
                     setThreadsState(updated)
                   }}
                 />
               </div>
             }
-            right={<PropertyPanel property={selectedThread?.property} onCollapse={() => setRightCollapsed(true)} />}
+            right={<PropertyPanel property={selectedThread?.property} guestName={selectedThread?.guest?.name} customerType={selectedThread?.guest?.customerType} onCollapse={() => setRightCollapsed(true)} />}
             minLeftPx={320}
             minCenterPx={520}
             minRightPx={280}

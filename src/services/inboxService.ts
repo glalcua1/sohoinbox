@@ -29,7 +29,13 @@ async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> 
 }
 
 function inferGuestFromThread(thread: Thread): Thread {
-  if (thread.guest) return thread
+  if (thread.guest) {
+    // Ensure default customerType when missing
+    if (!thread.guest.customerType) {
+      return { ...thread, guest: { ...thread.guest, customerType: 'regular' } }
+    }
+    return thread
+  }
   const inbound = thread.messages.find((m) => m.inbound)
   if (!inbound) return thread
   const name = inbound.senderName || 'Guest'
@@ -40,6 +46,7 @@ function inferGuestFromThread(thread: Thread): Thread {
       name,
       username: slug || undefined,
       avatarUrl: `/avatars/${slug}.svg`,
+      customerType: 'regular',
     },
   }
 }
@@ -70,6 +77,22 @@ function migrateThreads(threads: Thread[]): { threads: Thread[]; changed: boolea
       m.senderName === 'Rahul' ? { ...m, senderName: 'Liza' } : m
     )
     if (newMessages !== t.messages) tChanged = true
+    // Seed customerType for known guests if missing or defaulted to 'regular'
+    if (t.guest) {
+      const mapping: Record<string, 'regular' | 'member' | 'vip'> = {
+        Priya: 'vip',
+        Arjun: 'member',
+        Riya: 'member',
+        Liza: 'member',
+        Leena: 'vip',
+      }
+      const current = t.guest.customerType
+      const desired = mapping[t.guest.name]
+      if (desired && current !== desired) {
+        t = { ...t, guest: { ...t.guest, customerType: desired } }
+        tChanged = true
+      }
+    }
     if (tChanged) {
       changed = true
       return { ...t, messages: newMessages }
@@ -217,6 +240,27 @@ export async function addOutboundMessage(threadId: string, text: string): Promis
     ...t,
     lastUpdated: new Date().toISOString(),
     messages: [...t.messages, createMessage(t)],
+  }))
+}
+
+export async function deleteMessage(threadId: string, messageId: string): Promise<Thread[]> {
+  if (API_BASE) {
+    const current = (await getThreads()).find((t) => t.id === threadId)
+    if (!current) return await getThreads()
+    const next = {
+      ...current,
+      messages: current.messages.filter((m) => m.id !== messageId),
+    }
+    await fetch(`${API_BASE}/threads/${threadId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(next),
+    })
+    return await getThreads()
+  }
+  return updateThread(threadId, (t) => ({
+    ...t,
+    messages: t.messages.filter((m) => m.id !== messageId),
   }))
 }
 

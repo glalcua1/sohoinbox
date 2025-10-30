@@ -18,6 +18,10 @@ export const mockThreads: Thread[] = [
       location: 'Mumbai, IN',
       language: 'en-IN',
       avatarUrl: '/avatars/priya.svg',
+      customerType: 'vip',
+      email: 'priya@example.com',
+      phone: '+91 90000 00001',
+      lastStayed: '2025-09-12T10:00:00.000Z',
     },
     ai: {
       summary: 'Guest complimented room view and breakfast.',
@@ -85,6 +89,7 @@ export const mockThreads: Thread[] = [
       location: 'Delhi, IN',
       language: 'en-IN',
       avatarUrl: '/avatars/priya.svg',
+      customerType: 'regular',
     },
     ai: {
       summary: 'Guest reported loud music past quiet hours near pool.',
@@ -120,6 +125,10 @@ export const mockThreads: Thread[] = [
       location: 'Mumbai, IN',
       language: 'en-IN',
       avatarUrl: '/avatars/leena.svg',
+      customerType: 'member',
+      email: 'arjun@example.com',
+      phone: '+91 90000 00002',
+      lastStayed: '2025-06-01T10:00:00.000Z',
     },
     ai: {
       summary: 'Asked about breakfast and kids options.',
@@ -153,6 +162,7 @@ export const mockThreads: Thread[] = [
       location: 'Bengaluru, IN',
       language: 'en-IN',
       avatarUrl: '/avatars/liza.svg',
+      customerType: 'regular',
     },
     ai: {
       summary: 'Asking about airport shuttle timings and cost.',
@@ -187,6 +197,10 @@ export const mockThreads: Thread[] = [
       location: 'Delhi, IN',
       language: 'en-IN',
       avatarUrl: '/avatars/priya.svg',
+      customerType: 'member',
+      email: 'riya@example.com',
+      phone: '+91 90000 00003',
+      lastStayed: '2025-04-20T10:00:00.000Z',
     },
     ai: {
       summary: 'Guest reported housekeeping delay since morning.',
@@ -221,6 +235,10 @@ export const mockThreads: Thread[] = [
       location: 'Delhi, IN',
       language: 'en-IN',
       avatarUrl: '/avatars/liza.svg',
+      customerType: 'member',
+      email: 'liza@example.com',
+      phone: '+91 90000 00004',
+      lastStayed: '2025-10-28T14:00:00.000Z',
     },
     ai: {
       summary: 'Guest unhappy with late check-in; requested refund.',
@@ -229,7 +247,8 @@ export const mockThreads: Thread[] = [
       tags: ['check-in delay', 'refund'],
       suggestedReplies: [
         'We’re sorry about the delay. Please DM your booking ID so we can assist.',
-        'Apologies for the inconvenience — our team will review this right away.'
+        'Apologies for the inconvenience — our team will review this right away.',
+        'Search booking id'
       ],
     },
     property: {
@@ -277,6 +296,10 @@ export const mockThreads: Thread[] = [
       location: 'Bengaluru, IN',
       language: 'en-IN',
       avatarUrl: '/avatars/leena.svg',
+      customerType: 'vip',
+      email: 'leena@example.com',
+      phone: '+91 90000 00005',
+      lastStayed: '2025-08-18T10:00:00.000Z',
     },
     ai: {
       summary: 'Guest asked about suite availability for next weekend.',

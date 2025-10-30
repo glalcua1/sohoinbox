@@ -57,8 +57,8 @@ export default function ThreadListPanel({ threads, selectedId, onSelect, selecte
             <li
               key={t.id}
               className={
-                'cursor-pointer px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-900 ' +
-                (isActive ? 'bg-gray-50 dark:bg-gray-900' : '')
+                'cursor-pointer px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors ' +
+                (isActive ? 'bg-indigo-50/80 dark:bg-indigo-900/20 border-l-2 border-indigo-500' : '')
               }
             >
               <div className="flex items-start gap-3" onClick={() => onSelect(t.id)}>
@@ -74,7 +74,7 @@ export default function ThreadListPanel({ threads, selectedId, onSelect, selecte
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{t.threadTitle}</p>
+                  <p className={'truncate text-sm font-semibold ' + (isActive ? 'text-indigo-900 dark:text-indigo-200' : 'text-gray-900 dark:text-gray-100')}>{t.threadTitle}</p>
                   {t.guest && (
                     <span className="inline-flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
                       <Avatar name={t.guest.name} src={t.guest.avatarUrl} className="h-4 w-4" />
