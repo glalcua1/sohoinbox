@@ -243,6 +243,43 @@ export async function addOutboundMessage(threadId: string, text: string): Promis
   }))
 }
 
+export async function addOutboundAttachment(
+  threadId: string,
+  attachments: Array<{ id?: string; type: 'image'; url: string; alt?: string }>,
+  text?: string
+): Promise<Thread[]> {
+  const createMessage = (t: Thread) => ({
+    id: `m${Date.now()}`,
+    threadId: t.id,
+    platform: t.platform,
+    senderName: 'Agent',
+    text: text ?? '',
+    timestamp: new Date().toISOString(),
+    inbound: false,
+    attachments: attachments.map((a, idx) => ({ id: a.id ?? `att-${Date.now()}-${idx}` , type: a.type, url: a.url, alt: a.alt })),
+  })
+  if (API_BASE) {
+    const current = (await getThreads()).find((t) => t.id === threadId)
+    if (!current) return await getThreads()
+    const next = {
+      ...current,
+      lastUpdated: new Date().toISOString(),
+      messages: [...current.messages, createMessage(current)],
+    }
+    await fetch(`${API_BASE}/threads/${threadId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(next),
+    })
+    return await getThreads()
+  }
+  return updateThread(threadId, (t) => ({
+    ...t,
+    lastUpdated: new Date().toISOString(),
+    messages: [...t.messages, createMessage(t)],
+  }))
+}
+
 export async function deleteMessage(threadId: string, messageId: string): Promise<Thread[]> {
   if (API_BASE) {
     const current = (await getThreads()).find((t) => t.id === threadId)

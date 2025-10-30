@@ -67,6 +67,9 @@ export default function PropertyPanel({ property, guestName, customerType, onCol
         <div className="p-4 text-sm text-gray-500 dark:text-gray-400">No property selected</div>
       ) : (
         <div className="p-4 space-y-6">
+          {/* Hotel gallery */}
+          <Gallery propertyName={property.name} />
+
           {activeTab === 'details' && (
           <section>
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Overview</p>
@@ -96,12 +99,15 @@ export default function PropertyPanel({ property, guestName, customerType, onCol
           )}
           {activeTab === 'details' && (
           <section>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Rooms & Rates</p>
-            <ul className="space-y-1 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Rooms & Rates</p>
+            <ul className="space-y-2 text-sm">
               {property.rooms.map((r) => (
-                <li key={r.name} className="flex justify-between">
-                  <span>{r.name}</span>
-                  <span className="text-gray-500 dark:text-gray-400">{r.price}</span>
+                <li key={r.name} className="flex items-center justify-between rounded-md border border-gray-100 dark:border-gray-800 p-2 hover:bg-gray-50/60 dark:hover:bg-gray-900/40 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <RoomImage roomName={r.name} />
+                    <span className="truncate font-medium text-gray-900 dark:text-gray-100">{r.name}</span>
+                  </div>
+                  <span className="text-gray-600 dark:text-gray-400 whitespace-nowrap">{r.price}</span>
                 </li>
               ))}
             </ul>
@@ -213,6 +219,88 @@ export default function PropertyPanel({ property, guestName, customerType, onCol
         </div>
       )}
     </aside>
+  )
+}
+
+function slugify(input: string): string {
+  return input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+}
+
+function Gallery({ propertyName }: { propertyName: string }) {
+  const slug = slugify(propertyName)
+  // Candidate images placed in public/hotels/<slug>/
+  const candidates = [
+    `/${'hotels'}/${slug}/hero.jpg`,
+    `/${'hotels'}/${slug}/cover.jpg`,
+    `/${'hotels'}/${slug}/1.jpg`,
+    `/${'hotels'}/${slug}/2.jpg`,
+    `/${'hotels'}/${slug}/3.jpg`,
+    `/${'hotels'}/${slug}/4.jpg`,
+    `/${'hotels'}/${slug}/5.jpg`,
+  ]
+  return (
+    <section>
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Gallery</p>
+      <div className="relative w-full overflow-hidden rounded-md border border-gray-100 dark:border-gray-800">
+        <div className="flex snap-x snap-mandatory overflow-x-auto no-scrollbar">
+          {candidates.map((src, idx) => (
+            <HeroImage key={idx} src={src} />
+          ))}
+        </div>
+      </div>
+      <div className="mt-2 grid grid-cols-5 gap-2">
+        {candidates.slice(2).map((src, idx) => (
+          <ThumbImage key={idx} src={src} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function HeroImage({ src }: { src: string }) {
+  const [hidden, setHidden] = useState(false)
+  if (hidden) return null
+  return (
+    <img
+      src={src}
+      alt="Hotel image"
+      onError={() => setHidden(true)}
+      className="h-48 w-full flex-none snap-center object-cover"
+    />
+  )
+}
+
+function ThumbImage({ src }: { src: string }) {
+  const [hidden, setHidden] = useState(false)
+  if (hidden) return null
+  return (
+    <img
+      src={src}
+      alt="Hotel thumbnail"
+      onError={() => setHidden(true)}
+      className="h-16 w-full object-cover rounded"
+    />
+  )
+}
+
+function RoomImage({ roomName }: { roomName: string }) {
+  const [hidden, setHidden] = useState(false)
+  if (hidden) return <div className="h-12 w-16 rounded bg-gray-100 dark:bg-gray-800" />
+  const key = roomName.toLowerCase()
+  let file = ''
+  if (key.includes('deluxe')) file = 'deluxe.jpg'
+  else if (key.includes('suite')) file = 'suite.jpg'
+  else if (key.includes('standard')) file = 'standard.jpg'
+  else if (key.includes('cabin')) file = 'cabin.jpg'
+  else file = 'standardroom.jpg'
+  const src = `/${'Room'}/${file}`
+  return (
+    <img
+      src={src}
+      alt={roomName}
+      onError={() => setHidden(true)}
+      className="h-12 w-16 rounded object-cover"
+    />
   )
 }
 

@@ -168,7 +168,16 @@ export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag, on
                 }
               >
                 <p className="text-[11px] opacity-70">{m.senderName}</p>
-                <p>{m.text}</p>
+                {m.text && <p>{m.text}</p>}
+                {m.attachments && m.attachments.length > 0 && (
+                  <div className={`mt-2 grid grid-cols-2 gap-2 ${m.text? '':'mt-0'}`}>
+                    {m.attachments.map((att) => (
+                      att.type === 'image' ? (
+                        <img key={att.id} src={att.url} alt={att.alt || 'image'} className="rounded-md max-h-48 object-cover" />
+                      ) : null
+                    ))}
+                  </div>
+                )}
                 <p className="mt-1 text-[10px] opacity-60">{new Date(m.timestamp).toLocaleString()}</p>
               </div>
               {!m.inbound && (

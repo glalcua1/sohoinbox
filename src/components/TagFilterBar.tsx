@@ -7,17 +7,19 @@ interface Props {
   locations: string[]
   sla: 'all' | 'delayed' | 'on_time'
   customerType: CustomerType | 'all'
+  hotel: string | 'all'
+  hotels: string[]
   onChange: (next: { sentiment?: Sentiment | 'all'; platform?: Platform | 'all'; location?: string | 'all'; sla?: 'all' | 'delayed' | 'on_time'; customerType?: CustomerType | 'all' }) => void
 }
 
-export default function TagFilterBar({ sentiment, platform, location, locations, sla, customerType, onChange }: Props) {
+export default function TagFilterBar({ sentiment, platform, location, locations, sla, customerType, hotel, hotels, onChange }: Props) {
   const sOptions: Array<Sentiment | 'all'> = ['all', 'positive', 'neutral', 'negative']
   const pOptions: Array<Platform | 'all'> = ['all', 'facebook', 'instagram', 'x', 'google', 'tripadvisor']
   const slaOptions: Array<'all' | 'delayed' | 'on_time'> = ['all', 'delayed', 'on_time']
   const cOptions: Array<CustomerType | 'all'> = ['all', 'regular', 'member', 'vip']
   return (
-    <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-gray-950/60 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-10 w-full">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 w-full">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
         <div className="flex flex-col text-xs">
         <span className="text-gray-500 dark:text-gray-400 mb-1">Sentiment</span>
         <select
@@ -29,6 +31,19 @@ export default function TagFilterBar({ sentiment, platform, location, locations,
             <option key={opt} value={opt}>{opt}</option>
           ))}
         </select>
+        </div>
+        <div className="flex flex-col text-xs">
+          <span className="text-gray-500 dark:text-gray-400 mb-1">Hotel</span>
+          <select
+            value={hotel}
+            onChange={(e) => onChange({ location: undefined, platform: undefined, sentiment: undefined, sla: undefined, customerType: undefined, hotel: e.target.value as any })}
+            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="all">All</option>
+            {hotels.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
         </div>
         <div className="flex flex-col text-xs">
         <span className="text-gray-500 dark:text-gray-400 mb-1">SLA</span>
@@ -79,10 +94,10 @@ export default function TagFilterBar({ sentiment, platform, location, locations,
           ))}
         </select>
         </div>
-        <div className="col-span-full flex justify-end">
+        <div className="flex items-end justify-end">
           <button
             className="rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-xs hover:bg-gray-50 dark:hover:bg-gray-800"
-            onClick={() => onChange({ sentiment: 'all', platform: 'all', location: 'all', sla: 'all', customerType: 'all' })}
+            onClick={() => onChange({ sentiment: 'all', platform: 'all', location: 'all', sla: 'all', customerType: 'all', hotel: 'all' })}
           >
             Clear filters
           </button>

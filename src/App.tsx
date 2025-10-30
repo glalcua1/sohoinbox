@@ -8,8 +8,8 @@ import SearchBar from './components/SearchBar'
 import type { Platform, Sentiment, CustomerType } from './types/inbox'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import BulkActionBar from './components/BulkActionBar'
-import { addOutboundMessage, addTag, assignThreads, getThreads, removeTag, updateThread, deleteMessage } from './services/inboxService'
-import { translateText } from './services/translationService'
+import { addOutboundMessage, addTag, assignThreads, getThreads, removeTag, updateThread, deleteMessage, addOutboundAttachment } from './services/inboxService'
+import { translateText, applyTone } from './services/translationService'
 import type { Thread } from './types/inbox'
 import Sidebar from './components/Sidebar'
 import ResizableColumns from './components/ResizableColumns'
@@ -27,6 +27,8 @@ function App() {
   const [view, setView] = useState<'inbox' | 'archive'>('inbox')
   const searchRef = useRef<HTMLInputElement>(null)
   const [customerType, setCustomerType] = useState<CustomerType | 'all'>('all')
+  const [hotel, setHotel] = useState<string | 'all'>('all')
+  const [tone, setTone] = useState<'neutral' | 'casual' | 'formal'>('neutral')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
@@ -97,6 +99,7 @@ function App() {
         const ct = (t.guest?.customerType ?? 'regular') as CustomerType
         if (ct !== customerType) return false
       }
+      if (hotel !== 'all' && t.property.name !== hotel) return false
       if (sla !== 'all') {
         const delayed = isOverSla(t)
         if (sla === 'delayed' && !delayed) return false
@@ -111,12 +114,20 @@ function App() {
       }
       return true
     })
-  }, [threads, sentiment, platform, location, sla, customerType, query, view])
+  }, [threads, sentiment, platform, location, sla, customerType, hotel, query, view])
 
   const locationOptions = useMemo(() => {
     const set = new Set<string>()
     for (const t of threads) {
       if (t.guest?.location) set.add(t.guest.location)
+    }
+    return Array.from(set).sort()
+  }, [threads])
+
+  const hotelOptions = useMemo(() => {
+    const set = new Set<string>()
+    for (const t of threads) {
+      if (t.property?.name) set.add(t.property.name)
     }
     return Array.from(set).sort()
   }, [threads])
@@ -160,6 +171,24 @@ function App() {
             <div className="text-[11px] text-gray-500 dark:text-gray-400">R: Reply • /: Search</div>
           </div>
         </nav>
+        <TagFilterBar
+          sentiment={sentiment}
+          platform={platform}
+          location={location}
+          locations={locationOptions}
+          sla={sla}
+          customerType={customerType}
+          hotel={hotel}
+          hotels={hotelOptions}
+          onChange={(n) => {
+            if (n.sentiment !== undefined) setSentiment(n.sentiment)
+            if (n.platform !== undefined) setPlatform(n.platform)
+            if (n.location !== undefined) setLocation(n.location)
+            if (n.sla !== undefined) setSla(n.sla)
+            if (n.customerType !== undefined) setCustomerType(n.customerType)
+            if ((n as any).hotel !== undefined) setHotel((n as any).hotel)
+          }}
+        />
 
         <div className="h-[calc(100vh-56px)]">
           <ResizableColumns
@@ -188,21 +217,6 @@ function App() {
                 >Archive</button>
               </div>
             </div>
-            <TagFilterBar
-              sentiment={sentiment}
-              platform={platform}
-              location={location}
-              locations={locationOptions}
-              sla={sla}
-              customerType={customerType}
-              onChange={(n) => {
-                if (n.sentiment !== undefined) setSentiment(n.sentiment)
-                if (n.platform !== undefined) setPlatform(n.platform)
-                if (n.location !== undefined) setLocation(n.location)
-                if (n.sla !== undefined) setSla(n.sla)
-                if (n.customerType !== undefined) setCustomerType(n.customerType)
-              }}
-            />
                 <div className="flex-1">
                   <ThreadListPanel
                     threads={filteredThreads}
@@ -264,10 +278,27 @@ function App() {
                   value={reply}
                   onChange={setReply}
                   placeholder={selectedThread?.guest?.language ? `Type a reply… (will send in ${selectedThread.guest.language})` : 'Type a reply...'}
+                  tone={tone}
+                  onToneChange={setTone}
+                  onAttachImages={async (files) => {
+                    if (!selectedThread) return
+                    // Convert files to data URLs
+                    const readAsDataURL = (file: File) => new Promise<string>((resolve, reject) => {
+                      const reader = new FileReader()
+                      reader.onload = () => resolve(reader.result as string)
+                      reader.onerror = reject
+                      reader.readAsDataURL(file)
+                    })
+                    const urls = await Promise.all(Array.from(files).map(readAsDataURL))
+                    const attachments = urls.map((url) => ({ type: 'image' as const, url }))
+                    const updated = await addOutboundAttachment(selectedThread.id, attachments)
+                    setThreadsState(updated)
+                  }}
                   onSend={async () => {
                     if (!selectedThread || !reply.trim()) return
                     const targetLang = selectedThread.guest?.language
-                    const text = await translateText(reply.trim(), targetLang)
+                    const toned = await applyTone(reply.trim(), tone)
+                    const text = await translateText(toned, targetLang)
                     const updated = await addOutboundMessage(selectedThread.id, text)
                     setReply('')
                     setThreadsState(updated)

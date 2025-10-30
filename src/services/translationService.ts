@@ -11,4 +11,18 @@ export async function translateText(text: string, targetLang?: string): Promise<
   return text
 }
 
+export async function applyTone(text: string, tone: 'neutral' | 'casual' | 'formal'): Promise<string> {
+  // Simulate small processing delay
+  await new Promise((r) => setTimeout(r, 50))
+  if (tone === 'neutral') return text
+  if (tone === 'casual') {
+    // Very lightweight example tone transform
+    return text
+      .replace(/\bhello\b/gi, 'hey')
+      .replace(/\bthank you\b/gi, 'thanks')
+  }
+  // formal
+  return 'Dear Guest, ' + text.replace(/\bhey\b/gi, 'hello').replace(/\bthanks\b/gi, 'thank you')
+}
+
 

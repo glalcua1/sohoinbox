@@ -24,6 +24,7 @@ export interface Message {
   text: string;
   timestamp: string; // ISO string
   inbound: boolean;
+  attachments?: Array<{ id: string; type: 'image'; url: string; alt?: string }>; // Data URL or absolute URL
 }
 
 export interface AiMeta {
