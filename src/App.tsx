@@ -200,7 +200,6 @@ function App() {
           const matched = promos.find((p) => new RegExp(`\\b${p.code}\\b`, 'i').test(inboundText))
           if (matched) {
             const now = Date.now()
-            const start = new Date(matched.start).getTime()
             const end = new Date(matched.end).getTime()
             const isExpired = now > end
             if (isExpired) {
