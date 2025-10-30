@@ -280,6 +280,10 @@ function App() {
                   placeholder={selectedThread?.guest?.language ? `Type a reply… (will send in ${selectedThread.guest.language})` : 'Type a reply...'}
                   tone={tone}
                   onToneChange={setTone}
+                  onSelectSuggestion={async (s) => {
+                    const toned = await applyTone(s, tone, selectedThread?.guest?.name)
+                    setReply(toned)
+                  }}
                   onAttachImages={async (files) => {
                     if (!selectedThread) return
                     // Convert files to data URLs
@@ -297,7 +301,7 @@ function App() {
                   onSend={async () => {
                     if (!selectedThread || !reply.trim()) return
                     const targetLang = selectedThread.guest?.language
-                    const toned = await applyTone(reply.trim(), tone)
+                    const toned = await applyTone(reply.trim(), tone, selectedThread?.guest?.name)
                     const text = await translateText(toned, targetLang)
                     const updated = await addOutboundMessage(selectedThread.id, text)
                     setReply('')

@@ -7,9 +7,10 @@ interface Props {
   tone: 'neutral' | 'casual' | 'formal'
   onToneChange: (tone: 'neutral' | 'casual' | 'formal') => void
   onAttachImages?: (files: FileList) => void
+  onSelectSuggestion?: (s: string) => void
 }
 
-export default function QuickReplyBar({ suggestions, value, onChange, onSend, placeholder, tone, onToneChange, onAttachImages }: Props) {
+export default function QuickReplyBar({ suggestions, value, onChange, onSend, placeholder, tone, onToneChange, onAttachImages, onSelectSuggestion }: Props) {
   return (
     <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3">
       <div className="mb-2 flex flex-wrap gap-2">
@@ -17,7 +18,7 @@ export default function QuickReplyBar({ suggestions, value, onChange, onSend, pl
           <button
             key={idx}
             className="rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-xs px-3 py-1 text-gray-700 dark:text-gray-300"
-            onClick={() => onChange(s)}
+            onClick={() => onSelectSuggestion ? onSelectSuggestion(s) : onChange(s)}
             type="button"
           >
             {s}
