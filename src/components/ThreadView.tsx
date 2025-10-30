@@ -8,11 +8,12 @@ interface Props {
   onAssign?: (assignment: { assignee: string; department?: string; priority: 'low'|'medium'|'high' } | undefined) => void
   onAddTag?: (tag: string) => void
   onRemoveTag?: (tag: string) => void
+  onMarkComplete?: () => void
 }
 
 import { useEffect, useState } from 'react'
 
-export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag }: Props) {
+export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag, onMarkComplete }: Props) {
   const [flash, setFlash] = useState(false)
   useEffect(() => {
     if (!thread) return
@@ -40,6 +41,11 @@ export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag }: 
             {thread.assignment && (
               <span className="text-xs text-gray-600">Assigned: {thread.assignment.assignee}{thread.assignment.department? ` (${thread.assignment.department})`: ''} • {thread.assignment.priority}</span>
             )}
+          {thread.status === 'resolved' && (
+            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200">
+              Completed
+            </span>
+          )}
             <AssignDropdown
               assignees={[
                 { name: 'Alex', department: 'Guest Relations' },
@@ -48,6 +54,13 @@ export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag }: 
               ]}
               onAssign={onAssign || (()=>{})}
             />
+          {thread.status !== 'resolved' && (
+            <button
+              className="ml-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+              onClick={() => onMarkComplete?.()}
+              title="Mark this thread as complete"
+            >Mark as complete</button>
+          )}
           </div>
         </div>
         {thread.guest && (

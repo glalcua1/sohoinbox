@@ -8,7 +8,7 @@ import SearchBar from './components/SearchBar'
 import type { Platform, Sentiment } from './types/inbox'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import BulkActionBar from './components/BulkActionBar'
-import { addOutboundMessage, addTag, assignThreads, getThreads, removeTag } from './services/inboxService'
+import { addOutboundMessage, addTag, assignThreads, getThreads, removeTag, updateThread } from './services/inboxService'
 import type { Thread } from './types/inbox'
 import Sidebar from './components/Sidebar'
 import ResizableColumns from './components/ResizableColumns'
@@ -23,6 +23,7 @@ function App() {
   const [location, setLocation] = useState<string | 'all'>('all')
   const [sla, setSla] = useState<'all'|'delayed'|'on_time'>('all')
   const [reply, setReply] = useState('')
+  const [view, setView] = useState<'inbox' | 'archive'>('inbox')
   const searchRef = useRef<HTMLInputElement>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
@@ -81,6 +82,12 @@ function App() {
       return minutes > target && t.status !== 'resolved'
     }
     return threads.filter((t) => {
+      // Filter by view: inbox vs archive
+      if (view === 'archive') {
+        if (t.status !== 'resolved') return false
+      } else {
+        if (t.status === 'resolved') return false
+      }
       if (sentiment !== 'all' && t.ai.sentiment !== sentiment) return false
       if (platform !== 'all' && t.platform !== platform) return false
       if (location !== 'all' && (t.guest?.location ?? '').toLowerCase() !== location.toLowerCase()) return false
@@ -98,7 +105,7 @@ function App() {
       }
       return true
     })
-  }, [threads, sentiment, platform, location, sla, query])
+  }, [threads, sentiment, platform, location, sla, query, view])
 
   const locationOptions = useMemo(() => {
     const set = new Set<string>()
@@ -161,6 +168,20 @@ function App() {
               onClear={() => setSelectedIds(new Set())}
             />
             <SearchBar value={query} onChange={setQuery} ref={searchRef} />
+            <div className="px-4 pt-2">
+              <div className="inline-flex rounded-md border border-gray-200 dark:border-gray-800 overflow-hidden">
+                <button
+                  className={`px-3 py-1 text-xs ${view === 'inbox' ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-300'}`}
+                  onClick={() => setView('inbox')}
+                  aria-pressed={view === 'inbox'}
+                >Inbox</button>
+                <button
+                  className={`px-3 py-1 text-xs border-l border-gray-200 dark:border-gray-800 ${view === 'archive' ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-300'}`}
+                  onClick={() => setView('archive')}
+                  aria-pressed={view === 'archive'}
+                >Archive</button>
+              </div>
+            </div>
             <TagFilterBar
               sentiment={sentiment}
               platform={platform}
@@ -204,6 +225,15 @@ function App() {
                     if (!selectedThread) return
                     const updated = await assignThreads([selectedThread.id], assignment)
                     setThreadsState(updated)
+                  }}
+                  onMarkComplete={async () => {
+                    if (!selectedThread) return
+                    const updated = await updateThread(selectedThread.id, (t) => ({ ...t, status: 'resolved' }))
+                    setThreadsState(updated)
+                    if (view === 'inbox') {
+                      const next = updated.find((t) => t.status !== 'resolved')
+                      setSelectedId(next?.id)
+                    }
                   }}
                   onAddTag={async (tag) => {
                     if (!selectedThread) return
