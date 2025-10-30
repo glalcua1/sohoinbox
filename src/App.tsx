@@ -183,6 +183,43 @@ function App() {
         const updated = await addOutboundMessage(t.id, translated)
         setThreadsState(updated)
         setAutoRepliedTo((prev) => new Set(prev).add(last.id))
+
+        // If promo code expired, automatically propose next available promotion
+        try {
+          const inboundText = (last.text || '').toString()
+          const promos = t.property?.promotions || []
+          const matched = promos.find((p) => new RegExp(`\\b${p.code}\\b`, 'i').test(inboundText))
+          if (matched) {
+            const now = Date.now()
+            const start = new Date(matched.start).getTime()
+            const end = new Date(matched.end).getTime()
+            const isExpired = now > end
+            if (isExpired) {
+              const active = promos.find((p) => {
+                const s = new Date(p.start).getTime(); const e = new Date(p.end).getTime()
+                return now >= s && now <= e
+              })
+              let nextMsg: string | undefined
+              if (active) {
+                nextMsg = `We have an active offer: ${active.title} (code ${active.code}), valid ${new Date(active.start).toLocaleDateString()} – ${new Date(active.end).toLocaleDateString()}. Would you like me to apply it?`
+              } else {
+                const upcoming = promos
+                  .map((p) => ({ p, s: new Date(p.start).getTime() }))
+                  .filter((x) => x.s > now)
+                  .sort((a, b) => a.s - b.s)[0]?.p
+                if (upcoming) {
+                  nextMsg = `The next upcoming offer is ${upcoming.title} (code ${upcoming.code}), starting ${new Date(upcoming.start).toLocaleDateString()}. I can share current alternatives too.`
+                }
+              }
+              if (nextMsg) {
+                const tonedFollow = await applyTone(nextMsg, tone, t.guest?.name)
+                const translatedFollow = await translateText(tonedFollow, t.guest?.language)
+                const updated2 = await addOutboundMessage(t.id, translatedFollow)
+                setThreadsState(updated2)
+              }
+            }
+          }
+        } catch {}
       }
     }, 5000)
     return () => clearInterval(id)
