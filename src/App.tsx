@@ -34,6 +34,13 @@ function App() {
     try { return (localStorage.getItem('inbox_mode') as any) || 'manual' } catch { return 'manual' }
   })
   const [autoRepliedTo, setAutoRepliedTo] = useState<Set<string>>(new Set())
+  const [animateThreads, setAnimateThreads] = useState(false)
+  const [toast, setToast] = useState<{ msg: string; visible: boolean }>({ msg: '', visible: false })
+
+  function showToast(msg: string, ms = 3000) {
+    setToast({ msg, visible: true })
+    window.setTimeout(() => setToast({ msg: '', visible: false }), ms)
+  }
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
@@ -171,6 +178,7 @@ function App() {
   useEffect(() => {
     if (mode !== 'auto') return
     const id = setInterval(async () => {
+      let repliedCount = 0
       for (const t of threads) {
         if (t.status === 'resolved') continue
         const last = t.messages[t.messages.length - 1]
@@ -183,6 +191,7 @@ function App() {
         const updated = await addOutboundMessage(t.id, translated)
         setThreadsState(updated)
         setAutoRepliedTo((prev) => new Set(prev).add(last.id))
+        repliedCount++
 
         // If promo code expired, automatically propose next available promotion
         try {
@@ -216,10 +225,14 @@ function App() {
                 const translatedFollow = await translateText(tonedFollow, t.guest?.language)
                 const updated2 = await addOutboundMessage(t.id, translatedFollow)
                 setThreadsState(updated2)
+                repliedCount++
               }
             }
           }
         } catch {}
+      }
+      if (repliedCount > 0) {
+        showToast(`Auto-replied to ${repliedCount} thread${repliedCount>1?'s':''}.`)
       }
     }, 5000)
     return () => clearInterval(id)
@@ -249,8 +262,24 @@ function App() {
           </div>
           <div className="flex items-center gap-3">
             <div className="inline-flex rounded-md border border-gray-200 dark:border-gray-800 overflow-hidden" title="Run mode">
-              <button className={`px-2 py-1 text-xs ${mode==='manual'?'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100':'text-gray-600 dark:text-gray-300'}`} onClick={() => { setMode('manual'); try{localStorage.setItem('inbox_mode','manual')}catch{}}}>Manual</button>
-              <button className={`px-2 py-1 text-xs border-l border-gray-200 dark:border-gray-800 ${mode==='auto'?'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100':'text-gray-600 dark:text-gray-300'}`} onClick={() => { setMode('auto'); try{localStorage.setItem('inbox_mode','auto')}catch{}}}>Auto</button>
+              <button
+                className={`px-2 py-1 text-xs ${mode==='manual'?'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100':'text-gray-600 dark:text-gray-300'}`}
+                onClick={() => {
+                  setMode('manual')
+                  try { localStorage.setItem('inbox_mode','manual') } catch {}
+                  showToast('Manual mode enabled')
+                }}
+              >Manual</button>
+              <button
+                className={`px-2 py-1 text-xs border-l border-gray-200 dark:border-gray-800 ${mode==='auto'?'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100':'text-gray-600 dark:text-gray-300'}`}
+                onClick={() => {
+                  setMode('auto')
+                  try { localStorage.setItem('inbox_mode','auto') } catch {}
+                  setAnimateThreads(true)
+                  showToast('Auto mode enabled. AI will reply with context and guest language in mind.')
+                  window.setTimeout(() => setAnimateThreads(false), 2500)
+                }}
+              >Auto</button>
             </div>
             <button
               className="rounded-md border border-gray-200 px-2 py-1 text-xs hover:bg-gray-50"
@@ -314,7 +343,15 @@ function App() {
                 >Archive</button>
               </div>
             </div>
-                <div className="flex-1">
+                <div className={`flex-1 relative`}>
+                  {animateThreads && (
+                    <div className="absolute inset-0 z-10 bg-white/60 dark:bg-gray-950/40 backdrop-blur-[1px] flex items-center justify-center">
+                      <div className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
+                        <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        <span className="animate-pulse">Auto-replying to threads…</span>
+                      </div>
+                    </div>
+                  )}
                   <ThreadListPanel
                     threads={filteredThreads}
                     selectedId={selectedId}
@@ -439,6 +476,13 @@ function App() {
             onExpandRight={() => setRightCollapsed(false)}
           />
         </div>
+        {toast.visible && (
+          <div role="status" aria-live="polite" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+            <div className="rounded-md bg-gray-900 text-white text-xs px-3 py-2 shadow-lg">
+              {toast.msg}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
