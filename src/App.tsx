@@ -30,6 +30,10 @@ function App() {
   const [hotel, setHotel] = useState<string | 'all'>('all')
   const [tone, setTone] = useState<'neutral' | 'casual' | 'formal'>('neutral')
   const [propertyTab, setPropertyTab] = useState<'details'|'booking'|'promotions'>('details')
+  const [mode, setMode] = useState<'manual'|'auto'>(() => {
+    try { return (localStorage.getItem('inbox_mode') as any) || 'manual' } catch { return 'manual' }
+  })
+  const [autoRepliedTo, setAutoRepliedTo] = useState<Set<string>>(new Set())
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
@@ -164,6 +168,26 @@ function App() {
     return Array.from(set).sort()
   }, [threads])
 
+  useEffect(() => {
+    if (mode !== 'auto') return
+    const id = setInterval(async () => {
+      for (const t of threads) {
+        if (t.status === 'resolved') continue
+        const last = t.messages[t.messages.length - 1]
+        if (!last || !last.inbound) continue
+        if (autoRepliedTo.has(last.id)) continue
+        const suggestions = computeSuggestions(t)
+        const text = suggestions[0] || 'We are looking into this and will get back to you shortly.'
+        const toned = await applyTone(text, tone, t.guest?.name)
+        const translated = await translateText(toned, t.guest?.language)
+        const updated = await addOutboundMessage(t.id, translated)
+        setThreadsState(updated)
+        setAutoRepliedTo((prev) => new Set(prev).add(last.id))
+      }
+    }, 5000)
+    return () => clearInterval(id)
+  }, [mode, threads, tone])
+
   useKeyboardShortcuts({
     focusSearch: () => searchRef.current?.focus(),
     startReply: () => setReply(selectedThread?.ai.suggestedReplies[0] ?? ''),
@@ -187,6 +211,10 @@ function App() {
             <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">Community AI Inbox</div>
           </div>
           <div className="flex items-center gap-3">
+            <div className="inline-flex rounded-md border border-gray-200 dark:border-gray-800 overflow-hidden" title="Run mode">
+              <button className={`px-2 py-1 text-xs ${mode==='manual'?'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100':'text-gray-600 dark:text-gray-300'}`} onClick={() => { setMode('manual'); try{localStorage.setItem('inbox_mode','manual')}catch{}}}>Manual</button>
+              <button className={`px-2 py-1 text-xs border-l border-gray-200 dark:border-gray-800 ${mode==='auto'?'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100':'text-gray-600 dark:text-gray-300'}`} onClick={() => { setMode('auto'); try{localStorage.setItem('inbox_mode','auto')}catch{}}}>Auto</button>
+            </div>
             <button
               className="rounded-md border border-gray-200 px-2 py-1 text-xs hover:bg-gray-50"
               onClick={() => {
@@ -312,6 +340,7 @@ function App() {
                   placeholder={selectedThread?.guest?.language ? `Type a reply… (will send in ${selectedThread.guest.language})` : 'Type a reply...'}
                   tone={tone}
                   onToneChange={setTone}
+                  disabled={mode==='auto'}
                   onSelectSuggestion={async (s) => {
                     const toned = await applyTone(s, tone, selectedThread?.guest?.name)
                     setReply(toned)
