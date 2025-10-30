@@ -229,7 +229,7 @@ function slugify(input: string): string {
 function Gallery({ propertyName }: { propertyName: string }) {
   const slug = slugify(propertyName)
   // Candidate images placed in public/hotels/<slug>/
-  const candidates = [
+  const lower = [
     `/${'hotels'}/${slug}/hero.jpg`,
     `/${'hotels'}/${slug}/cover.jpg`,
     `/${'hotels'}/${slug}/1.jpg`,
@@ -238,6 +238,16 @@ function Gallery({ propertyName }: { propertyName: string }) {
     `/${'hotels'}/${slug}/4.jpg`,
     `/${'hotels'}/${slug}/5.jpg`,
   ]
+  const upper = [
+    `/${'Hotels'}/${slug}/hero.jpg`,
+    `/${'Hotels'}/${slug}/cover.jpg`,
+    `/${'Hotels'}/${slug}/1.jpg`,
+    `/${'Hotels'}/${slug}/2.jpg`,
+    `/${'Hotels'}/${slug}/3.jpg`,
+    `/${'Hotels'}/${slug}/4.jpg`,
+    `/${'Hotels'}/${slug}/5.jpg`,
+  ]
+  const candidates = [...lower, ...upper]
   return (
     <section>
       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Gallery</p>

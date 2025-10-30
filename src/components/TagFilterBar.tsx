@@ -9,7 +9,7 @@ interface Props {
   customerType: CustomerType | 'all'
   hotel: string | 'all'
   hotels: string[]
-  onChange: (next: { sentiment?: Sentiment | 'all'; platform?: Platform | 'all'; location?: string | 'all'; sla?: 'all' | 'delayed' | 'on_time'; customerType?: CustomerType | 'all' }) => void
+  onChange: (next: { sentiment?: Sentiment | 'all'; platform?: Platform | 'all'; location?: string | 'all'; sla?: 'all' | 'delayed' | 'on_time'; customerType?: CustomerType | 'all'; hotel?: string | 'all' }) => void
 }
 
 export default function TagFilterBar({ sentiment, platform, location, locations, sla, customerType, hotel, hotels, onChange }: Props) {
