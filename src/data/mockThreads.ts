@@ -54,6 +54,10 @@ export const mockThreads: Thread[] = [
         { name: 'Suite', price: '₹12,000' },
       ],
       policies: { checkIn: '2PM', checkOut: '11AM' },
+      promotions: [
+        { title: 'Monsoon Getaway 20% off', code: 'MONSOON20', description: 'Applicable on Deluxe & Suite stays, min 2 nights', start: '2025-06-01T00:00:00.000Z', end: '2025-08-31T23:59:59.000Z' },
+        { title: 'Festive Offer 15% off', code: 'FESTIVE15', description: 'Breakfast included', start: '2025-10-15T00:00:00.000Z', end: '2026-01-10T23:59:59.000Z' },
+      ],
     },
     messages: [
       {
@@ -145,6 +149,10 @@ export const mockThreads: Thread[] = [
         { name: 'Executive', price: '₹9,500' },
       ],
       policies: { checkIn: '2PM', checkOut: '11AM' },
+      promotions: [
+        { title: 'Spring Sale 20% off', code: 'SPRING20', description: 'Use before end of May', start: '2025-03-01T00:00:00.000Z', end: '2025-05-31T23:59:59.000Z' },
+        { title: 'Weekend Saver 10% off', code: 'WEEKEND10', description: 'Fri–Sun stays only', start: '2025-01-01T00:00:00.000Z', end: '2025-12-31T23:59:59.000Z' },
+      ],
     },
     messages: [
       { id: 'm6', threadId: 't5', platform: 'google', senderName: 'Arjun', text: 'What time is breakfast? Do you have kids menu?', timestamp: iso(9), inbound: true },
@@ -179,9 +187,56 @@ export const mockThreads: Thread[] = [
         { name: 'Suite', price: '₹11,000' },
       ],
       policies: { checkIn: '3PM', checkOut: '10AM' },
+      promotions: [
+        { title: 'Hikers Special 12% off', code: 'HIKE12', description: 'Complimentary trail map', start: '2025-02-01T00:00:00.000Z', end: '2025-11-30T23:59:59.000Z' },
+      ],
     },
     messages: [
       { id: 'm7', threadId: 't6', platform: 'tripadvisor', senderName: 'Neha', text: 'Do you offer airport shuttle late night?', timestamp: iso(75), inbound: true },
+    ],
+  },
+  {
+    id: 't8',
+    platform: 'facebook',
+    threadTitle: 'Did not get promo discount at CityCenter',
+    lastUpdated: iso(1),
+    status: 'open',
+    guest: {
+      name: 'Anita',
+      username: 'anita.travel',
+      location: 'Mumbai, IN',
+      language: 'en-IN',
+      avatarUrl: '/avatars/leena.svg',
+      customerType: 'member',
+      email: 'anita@example.com',
+    },
+    ai: {
+      summary: 'Guest claims SPRING20 was not applied during booking.',
+      sentiment: 'negative',
+      tags: ['promotion', 'discount', 'billing'],
+      suggestedReplies: [
+        'I’m sorry this happened. May I confirm your booking ID to check the code?',
+        'We’ll honor SPRING20 if eligible. I can apply the difference right away.',
+        'The code works for stays till May 31 and select room types. I’ll verify yours.',
+      ],
+    },
+    property: {
+      name: 'CityCenter Hotel',
+      address: '456 Downtown Ave',
+      contact: '+1 (555) 987-6543',
+      rooms: [
+        { name: 'Standard', price: '₹5,500' },
+        { name: 'Executive', price: '₹9,500' },
+      ],
+      policies: { checkIn: '2PM', checkOut: '11AM' },
+      promotions: [
+        { title: 'Spring Sale 20% off', code: 'SPRING20', description: 'Use before end of May', start: '2025-03-01T00:00:00.000Z', end: '2025-05-31T23:59:59.000Z' },
+        { title: 'Weekend Saver 10% off', code: 'WEEKEND10', description: 'Fri–Sun stays only', start: '2025-01-01T00:00:00.000Z', end: '2025-12-31T23:59:59.000Z' },
+      ],
+    },
+    messages: [
+      { id: 'm9', threadId: 't8', platform: 'facebook', senderName: 'Anita', text: 'I used SPRING20 but got charged full price.', timestamp: iso(2), inbound: true },
+      { id: 'm10', threadId: 't8', platform: 'facebook', senderName: 'Hotel', text: 'We’re checking this for you.', timestamp: iso(1), inbound: false },
     ],
   },
   {

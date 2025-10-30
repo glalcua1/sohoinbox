@@ -14,7 +14,7 @@ const NAV: NavItem[] = [
   { key: 'ugc', label: 'UGC', icon: '👥', iconPath: '/icons/UGC.svg' },
   {
     key: 'reputation',
-    label: 'Reputation Management',
+    label: 'Community AI Inbox',
     icon: '🗨️',
     iconPath: '/icons/Reputation.svg',
     

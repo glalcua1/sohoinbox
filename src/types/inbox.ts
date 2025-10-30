@@ -51,6 +51,15 @@ export interface PropertyInfo {
   restaurants?: { type: string; hours: string }[]; // e.g., type: "Indian", hours: "7AM–11PM"
   poolHours?: string; // e.g., "6AM–10PM"
   parking?: string; // e.g., "On-site parking, free for guests"
+  promotions?: Promotion[];
+}
+
+export interface Promotion {
+  title: string;
+  code: string;
+  description?: string;
+  start: string; // ISO
+  end: string; // ISO
 }
 
 export interface Thread {

@@ -8,12 +8,14 @@ interface Props {
   onToneChange: (tone: 'neutral' | 'casual' | 'formal') => void
   onAttachImages?: (files: FileList) => void
   onSelectSuggestion?: (s: string) => void
+  showViewPromotions?: boolean
+  onViewPromotions?: () => void
 }
 
-export default function QuickReplyBar({ suggestions, value, onChange, onSend, placeholder, tone, onToneChange, onAttachImages, onSelectSuggestion }: Props) {
+export default function QuickReplyBar({ suggestions, value, onChange, onSend, placeholder, tone, onToneChange, onAttachImages, onSelectSuggestion, showViewPromotions, onViewPromotions }: Props) {
   return (
-    <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3">
-      <div className="mb-2 flex flex-wrap gap-2">
+    <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3 sticky bottom-0 bg-white dark:bg-gray-950">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         {suggestions.map((s, idx) => (
           <button
             key={idx}
@@ -24,6 +26,16 @@ export default function QuickReplyBar({ suggestions, value, onChange, onSend, pl
             {s}
           </button>
         ))}
+        {showViewPromotions && (
+          <button
+            type="button"
+            className="ml-auto text-[11px] underline text-indigo-600 hover:text-indigo-700"
+            onClick={onViewPromotions}
+            title="View active promotions"
+          >
+            View promotions
+          </button>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 text-xs">

@@ -12,11 +12,12 @@ interface Props {
   onRemoveTag?: (tag: string) => void
   onMarkComplete?: () => void
   onDeleteMessage?: (messageId: string) => void
+  onViewPromotions?: () => void
 }
 
 // useEffect/useState imported above
 
-export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag, onMarkComplete, onDeleteMessage }: Props) {
+export default function ThreadView({ thread, onAssign, onAddTag, onRemoveTag, onMarkComplete, onDeleteMessage, onViewPromotions }: Props) {
   const [flash, setFlash] = useState(false)
   const [booking, setBooking] = useState<BookingDetails | undefined>(undefined)
   useEffect(() => {

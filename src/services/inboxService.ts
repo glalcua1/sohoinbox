@@ -57,7 +57,7 @@ function enrichThreads(threads: Thread[]): Thread[] {
 
 function migrateThreads(threads: Thread[]): { threads: Thread[]; changed: boolean } {
   let changed = false
-  const updated = threads.map((t) => {
+  let updated = threads.map((t) => {
     let tChanged = false
     // Migrate Rahul -> Liza in guest
     if (t.guest && t.guest.name === 'Rahul') {
@@ -99,6 +99,67 @@ function migrateThreads(threads: Thread[]): { threads: Thread[]; changed: boolea
     }
     return t
   })
+  // Ensure property promotions exist for known properties
+  const byProperty: Record<string, Thread['property']['promotions']> = {
+    'CityCenter Hotel': [
+      { title: 'Spring Sale 20% off', code: 'SPRING20', start: '2025-03-01T00:00:00.000Z', end: '2025-05-31T23:59:59.000Z', description: 'Use before end of May' },
+      { title: 'Weekend Saver 10% off', code: 'WEEKEND10', start: '2025-01-01T00:00:00.000Z', end: '2025-12-31T23:59:59.000Z', description: 'Fri–Sun stays only' },
+    ],
+    'OceanView Resort': [
+      { title: 'Monsoon Getaway 20% off', code: 'MONSOON20', start: '2025-06-01T00:00:00.000Z', end: '2025-08-31T23:59:59.000Z', description: 'Min 2 nights' },
+      { title: 'Festive Offer 15% off', code: 'FESTIVE15', start: '2025-10-15T00:00:00.000Z', end: '2026-01-10T23:59:59.000Z', description: 'Breakfast included' },
+    ],
+    'MountainPeak Lodge': [
+      { title: 'Hikers Special 12% off', code: 'HIKE12', start: '2025-02-01T00:00:00.000Z', end: '2025-11-30T23:59:59.000Z', description: 'Complimentary trail map' },
+    ],
+  }
+  updated = updated.map((t) => {
+    if (!t.property.promotions && byProperty[t.property.name]) {
+      changed = true
+      return { ...t, property: { ...t.property, promotions: byProperty[t.property.name] } }
+    }
+    return t
+  })
+  // Add promotion scenario thread if missing
+  if (!updated.find((t) => t.id === 't8')) {
+    const now = new Date()
+    const isoNow = now.toISOString()
+    const promoThread: Thread = {
+      id: 't8',
+      platform: 'facebook',
+      threadTitle: 'Did not get promo discount at CityCenter',
+      lastUpdated: isoNow,
+      status: 'open',
+      guest: {
+        name: 'Anita', username: 'anita.travel', location: 'Mumbai, IN', language: 'en-IN', avatarUrl: '/avatars/leena.svg', customerType: 'member',
+      },
+      ai: {
+        summary: 'Guest claims SPRING20 was not applied during booking.',
+        sentiment: 'negative',
+        tags: ['promotion', 'discount', 'billing'],
+        suggestedReplies: [
+          'I’m sorry this happened. May I confirm your booking ID to check the code?',
+          'We’ll honor SPRING20 if eligible. I can apply the difference right away.',
+          'The code works for stays till May 31 and select room types. I’ll verify yours.',
+        ],
+        suggestedReplies: [
+          'I’m sorry this happened. May I confirm your booking ID to check the code?',
+          'We’ll honor SPRING20 if eligible. I can apply the difference right away.',
+          'The code works for stays till May 31 and select room types. I’ll verify yours.',
+        ],
+      } as any,
+      property: {
+        name: 'CityCenter Hotel', address: '456 Downtown Ave', contact: '+1 (555) 987-6543', rooms: [
+          { name: 'Standard', price: '₹5,500' }, { name: 'Executive', price: '₹9,500' },
+        ], policies: { checkIn: '2PM', checkOut: '11AM' }, promotions: byProperty['CityCenter Hotel'],
+      },
+      messages: [
+        { id: `m${Date.now()}`, threadId: 't8', platform: 'facebook', senderName: 'Anita', text: 'I used SPRING20 but got charged full price.', timestamp: isoNow, inbound: true },
+      ],
+    }
+    updated = [promoThread, ...updated]
+    changed = true
+  }
   return { threads: updated, changed }
 }
 

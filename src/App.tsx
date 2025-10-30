@@ -29,6 +29,7 @@ function App() {
   const [customerType, setCustomerType] = useState<CustomerType | 'all'>('all')
   const [hotel, setHotel] = useState<string | 'all'>('all')
   const [tone, setTone] = useState<'neutral' | 'casual' | 'formal'>('neutral')
+  const [propertyTab, setPropertyTab] = useState<'details'|'booking'|'promotions'>('details')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
@@ -123,6 +124,37 @@ function App() {
     }
     return Array.from(set).sort()
   }, [threads])
+  function computeSuggestions(t?: Thread): string[] {
+    if (!t) return []
+    const base = t.ai.suggestedReplies || []
+    const inbound = [...t.messages].reverse().find((m) => m.inbound)
+    const promos = t.property?.promotions || []
+    let dynamic: string[] = []
+    if (inbound && promos.length) {
+      const text = inbound.text || ''
+      const match = promos.find((p) => new RegExp(`\\b${p.code}\\b`, 'i').test(text))
+      if (match) {
+        const now = Date.now()
+        const start = new Date(match.start).getTime()
+        const end = new Date(match.end).getTime()
+        if (now >= start && now <= end) {
+          dynamic = [
+            `The code ${match.code} is valid for this period. I can apply the discount difference to your booking. May I confirm your booking ID?`,
+            `I have verified ${match.code} is active. I’ll ensure your invoice reflects the ${match.title}.`,
+          ]
+        } else if (now > end) {
+          dynamic = [
+            `The code ${match.code} expired on ${new Date(match.end).toLocaleDateString()}. I can offer an alternative active promotion if eligible.`,
+          ]
+        } else {
+          dynamic = [
+            `The code ${match.code} starts on ${new Date(match.start).toLocaleDateString()}. I can suggest current active offers instead.`,
+          ]
+        }
+      }
+    }
+    return dynamic.length ? [...dynamic, ...base] : base
+  }
 
   const hotelOptions = useMemo(() => {
     const set = new Set<string>()
@@ -152,7 +184,7 @@ function App() {
         <nav className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
           <div className="flex items-center gap-3">
             <div className="h-7 w-7 rounded-md bg-indigo-600"></div>
-            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">Reputation Management</div>
+            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">Community AI Inbox</div>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -190,7 +222,7 @@ function App() {
           }}
         />
 
-        <div className="h-[calc(100vh-56px)]">
+        <div className="flex-1 min-h-0">
           <ResizableColumns
             left={
               <div className="flex h-full flex-col">
@@ -272,9 +304,13 @@ function App() {
                     const updated = await removeTag(selectedThread.id, tag)
                     setThreadsState(updated)
                   }}
+                  onViewPromotions={() => {
+                    setRightCollapsed(false)
+                    setPropertyTab('promotions')
+                  }}
                 />
                 <QuickReplyBar
-                  suggestions={selectedThread?.ai.suggestedReplies ?? []}
+                  suggestions={computeSuggestions(selectedThread)}
                   value={reply}
                   onChange={setReply}
                   placeholder={selectedThread?.guest?.language ? `Type a reply… (will send in ${selectedThread.guest.language})` : 'Type a reply...'}
@@ -298,6 +334,11 @@ function App() {
                     const updated = await addOutboundAttachment(selectedThread.id, attachments)
                     setThreadsState(updated)
                   }}
+                  showViewPromotions={(selectedThread?.property?.promotions?.length ?? 0) > 0}
+                  onViewPromotions={() => {
+                    setRightCollapsed(false)
+                    setPropertyTab('promotions')
+                  }}
                   onSend={async () => {
                     if (!selectedThread || !reply.trim()) return
                     const targetLang = selectedThread.guest?.language
@@ -310,7 +351,25 @@ function App() {
                 />
               </div>
             }
-            right={<PropertyPanel property={selectedThread?.property} guestName={selectedThread?.guest?.name} customerType={selectedThread?.guest?.customerType} onCollapse={() => setRightCollapsed(true)} />}
+            right={<PropertyPanel
+              property={selectedThread?.property}
+              guestName={selectedThread?.guest?.name}
+              customerType={selectedThread?.guest?.customerType}
+              externalActiveTab={propertyTab}
+              onSharePromotion={async (text, send) => {
+                if (!selectedThread) return
+                if (send) {
+                  const targetLang = selectedThread.guest?.language
+                  const toned = await applyTone(text, tone, selectedThread?.guest?.name)
+                  const translated = await translateText(toned, targetLang)
+                  const updated = await addOutboundMessage(selectedThread.id, translated)
+                  setThreadsState(updated)
+                } else {
+                  setReply(text)
+                }
+              }}
+              onCollapse={() => setRightCollapsed(true)}
+            />}
             minLeftPx={320}
             minCenterPx={520}
             minRightPx={280}

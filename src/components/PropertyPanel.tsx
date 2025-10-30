@@ -6,11 +6,13 @@ interface Props {
   property?: PropertyInfo
   guestName?: string
   customerType?: CustomerType
+  externalActiveTab?: 'details' | 'booking' | 'promotions'
   onCollapse?: () => void
+  onSharePromotion?: (text: string, send?: boolean) => void
 }
 
-export default function PropertyPanel({ property, guestName, customerType, onCollapse }: Props) {
-  const [activeTab, setActiveTab] = useState<'details' | 'booking'>('details')
+export default function PropertyPanel({ property, guestName, customerType, externalActiveTab, onCollapse, onSharePromotion }: Props) {
+  const [activeTab, setActiveTab] = useState<'details' | 'booking' | 'promotions'>('details')
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [current, setCurrent] = useState<BookingDetails | undefined>(undefined)
@@ -27,6 +29,10 @@ export default function PropertyPanel({ property, guestName, customerType, onCol
       setLoading(false)
     }
   }
+  // Respond to external tab change
+  useEffect(() => {
+    if (externalActiveTab) setActiveTab(externalActiveTab)
+  }, [externalActiveTab])
   // Auto-search when guestName available
   useEffect(() => {
     if (!guestName) return
@@ -61,6 +67,10 @@ export default function PropertyPanel({ property, guestName, customerType, onCol
             className={`px-3 py-1 text-xs border-l border-gray-200 dark:border-gray-800 ${activeTab==='booking'?'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100':'text-gray-600 dark:text-gray-300'}`}
             onClick={() => setActiveTab('booking')}
           >Search booking</button>
+          <button
+            className={`px-3 py-1 text-xs border-l border-gray-200 dark:border-gray-800 ${activeTab==='promotions'?'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100':'text-gray-600 dark:text-gray-300'}`}
+            onClick={() => setActiveTab('promotions')}
+          >Promotions</button>
         </div>
       </div>
       {!property ? (
@@ -96,6 +106,53 @@ export default function PropertyPanel({ property, guestName, customerType, onCol
               </div>
             </div>
           </section>
+          )}
+          {activeTab === 'promotions' && (
+            <section>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Promotions</p>
+              {!property.promotions || property.promotions.length === 0 ? (
+                <div className="text-sm text-gray-500">No promotions available.</div>
+              ) : (
+                <ul className="space-y-2">
+                  {property.promotions.map((p, idx) => {
+                    const now = Date.now()
+                    const start = new Date(p.start).getTime()
+                    const end = new Date(p.end).getTime()
+                    let badge = 'Upcoming'
+                    let badgeCls = 'bg-gray-100 text-gray-700'
+                    if (now >= start && now <= end) { badge = 'Active'; badgeCls = 'bg-emerald-100 text-emerald-700' }
+                    if (now > end) { badge = 'Expired'; badgeCls = 'bg-rose-100 text-rose-700' }
+                    const msg = `Promotion: ${p.title} (code ${p.code}). Valid ${new Date(p.start).toLocaleDateString()} – ${new Date(p.end).toLocaleDateString()}${p.description?`. ${p.description}`:''}`
+                    return (
+                      <li key={idx} className="rounded-md border border-gray-100 dark:border-gray-800 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{p.title}</div>
+                            <div className="text-xs text-gray-500">Code: <span className="font-mono">{p.code}</span></div>
+                            {p.description && <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">{p.description}</div>}
+                          </div>
+                          <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] ${badgeCls}`}>{badge}</span>
+                        </div>
+                        <div className="mt-2 text-xs text-gray-500">{new Date(p.start).toLocaleDateString()} – {new Date(p.end).toLocaleDateString()}</div>
+                        <div className="mt-3 flex items-center gap-2">
+                          <button
+                            className="rounded-md border border-gray-300 dark:border-gray-700 px-2 py-1 text-xs hover:bg-gray-50 dark:hover:bg-gray-800"
+                            onClick={() => onSharePromotion?.(msg, false)}
+                            title="Insert promotion into reply"
+                          >Insert into reply</button>
+                          <button
+                            className="rounded-md bg-indigo-600 text-white px-2 py-1 text-xs hover:bg-indigo-700"
+                            onClick={() => onSharePromotion?.(msg, true)}
+                            title="Send promotion now"
+                            disabled={badge === 'Expired'}
+                          >Send</button>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
           )}
           {activeTab === 'details' && (
           <section>
